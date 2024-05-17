@@ -103,7 +103,10 @@ export class ZmanimSwitches implements DynamicPlatformPlugin {
       new CronJob(`*/${this.configOptions.logInterval} * * * *`, () => {
         const mostRecentTime = this.getRecentTime();
         const now = DateTime.now().setZone('America/Chicago');
-        this.log.info(`Current time: ${now.toFormat('hh:mm a')}, Most recent zman: ${mostRecentTime.label} at ${mostRecentTime.time.toFormat('hh:mm a')}`);
+        this.log.info(
+          `Current time: ${now.toFormat('hh:mm a')}, ` +
+          `Most recent zman: ${mostRecentTime.label} at ${mostRecentTime.time.toFormat('hh:mm a')}`,
+        );
       }, null, true, 'America/Chicago');
     }
   }
