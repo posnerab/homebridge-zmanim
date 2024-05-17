@@ -30,7 +30,7 @@ export class ZmanimSwitches implements DynamicPlatformPlugin {
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
-    this.recentTimeFile = path.join(this.api.user.persistPath(), 'recent_time.txt');
+    this.recentTimeFile = path.join(this.api.user.persistPath(), 'zmamin-js/recent_time.txt');
     this.switchNames = config.switchNames || {};
     this.configOptions = {
       refreshInterval: config.refreshInterval || 1,
