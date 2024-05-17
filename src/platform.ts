@@ -5,6 +5,7 @@ import { DateTime } from 'luxon';
 import * as fs from 'fs';
 import * as path from 'path';
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
+import { ZmanimAccessory } from './platformAccessory';
 
 const relevantZmanimKeys = [
   'chatzotNight', 'misheyakir', 'dawn', 'sunrise', 'sofZmanShma', 'sofZmanTfilla',
@@ -43,40 +44,54 @@ export class ZmanimSwitches implements DynamicPlatformPlugin {
       return;
     }
 
-    this.zmanimUrl = `https://www.hebcal.com/zmanim?cfg=json&geonameid=${config.geonameid}`;
+    const todayDate = DateTime.now().toFormat('yyyy-MM-dd');
+    this.zmanimUrl = `https://www.hebcal.com/zmanim?cfg=json&geonameid=${config.geonameid}&date=${todayDate}`;
 
     this.api.on('didFinishLaunching', () => {
       log.debug('Executed didFinishLaunching callback');
       this.initializeAccessories();
       this.scheduleZmanimFetch();
+      this.scheduleMostRecentTimeLog();
+      this.fetchAndUpdateZmanim();
     });
   }
 
   configureAccessory(accessory: PlatformAccessory) {
     this.log.info('Loading accessory from cache:', accessory.displayName);
+    accessory.context.device = accessory.displayName;
     this.accessories.push(accessory);
+    new ZmanimAccessory(this, accessory);
   }
 
   initializeAccessories() {
     relevantZmanimKeys.forEach((key) => {
       const uuidKey = this.api.hap.uuid.generate(`homebridge-zmanim.${key}`);
-      const accessory = new this.api.platformAccessory(this.switchNames[key] || key, uuidKey);
-      const service = accessory.addService(this.Service.Switch, this.switchNames[key] || key);
+      const existingAccessory = this.accessories.find(acc => acc.UUID === uuidKey);
 
-      service.getCharacteristic(this.Characteristic.On)
-        .on('get', (callback) => this.getSwitchState(key, callback))
-        .on('set', (value, callback) => this.setSwitchState(key, value, callback));
-
-      this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-      this.accessories.push(accessory);
+      if (existingAccessory) {
+        this.log.info('Restoring existing accessory from cache:', existingAccessory.displayName);
+        new ZmanimAccessory(this, existingAccessory);
+      } else {
+        const accessory = new this.api.platformAccessory(this.switchNames[key] || key, uuidKey);
+        accessory.context.device = key;
+        new ZmanimAccessory(this, accessory);
+        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+        this.accessories.push(accessory);
+      }
     });
 
     this.updateSwitchStates();
   }
 
   scheduleZmanimFetch() {
-    new CronJob('0 2 * * *', () => this.fetchAndUpdateZmanim(), null, true, 'America/Chicago');
-    this.fetchAndUpdateZmanim(); // Fetch immediately on startup
+    new CronJob('1 0 * * *', () => this.fetchAndUpdateZmanim(), null, true, 'America/Chicago');
+  }
+
+  scheduleMostRecentTimeLog() {
+    new CronJob('*/5 * * * *', () => {
+      const mostRecentTime = this.getRecentTime();
+      this.log.info(`Most recent time: ${mostRecentTime}`);
+    }, null, true, 'America/Chicago');
   }
 
   async fetchAndUpdateZmanim() {
@@ -85,6 +100,7 @@ export class ZmanimSwitches implements DynamicPlatformPlugin {
       const zmanim = response.data.times;
       fs.writeFileSync(this.zmanimFile, JSON.stringify(zmanim), 'utf8');
       this.log.info('Successfully fetched and cached Zmanim.');
+      this.log.info('Zmanim for the day:', zmanim);
       this.updateMostRecentTime(zmanim);
     } catch (error) {
       this.log.error('Error fetching Zmanim:', error);
