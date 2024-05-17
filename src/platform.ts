@@ -16,11 +16,16 @@ interface MostRecentTime {
   time: DateTime;
 }
 
+interface CachedZmanim {
+  [key: string]: string;
+}
+
 export class ZmanimSwitches implements DynamicPlatformPlugin {
   public readonly Service: typeof Service = this.api.hap.Service;
   public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
   public readonly accessories: PlatformAccessory[] = [];
   private recentTimeFile: string;
+  private zmanimFile: string;
   private zmanimUrl!: string;
   private switchNames: Record<string, string>;
 
@@ -30,6 +35,7 @@ export class ZmanimSwitches implements DynamicPlatformPlugin {
     public readonly api: API,
   ) {
     this.recentTimeFile = path.join(this.api.user.persistPath(), 'recent_time.txt');
+    this.zmanimFile = path.join(this.api.user.persistPath(), 'zmanim.json');
     this.switchNames = config.switchNames || {};
 
     if (!config.geonameid) {
@@ -77,34 +83,40 @@ export class ZmanimSwitches implements DynamicPlatformPlugin {
     try {
       const response = await axios.get(this.zmanimUrl);
       const zmanim = response.data.times;
-      this.log.info('Successfully fetched Zmanim.');
-      const now = DateTime.now().setZone('America/Chicago');
-      let mostRecentTime: MostRecentTime | null = null;
-
-      for (const key of relevantZmanimKeys) {
-        const zmanTime = DateTime.fromISO(zmanim[key]).setZone('America/Chicago');
-        if (zmanTime <= now) {
-          mostRecentTime = { label: key, time: zmanTime };
-        }
-      }
-
-      if (mostRecentTime) {
-        fs.writeFileSync(this.recentTimeFile, mostRecentTime.label, 'utf8');
-        this.updateSwitchStates();
-      }
+      fs.writeFileSync(this.zmanimFile, JSON.stringify(zmanim), 'utf8');
+      this.log.info('Successfully fetched and cached Zmanim.');
+      this.updateMostRecentTime(zmanim);
     } catch (error) {
       this.log.error('Error fetching Zmanim:', error);
     }
   }
 
+  updateMostRecentTime(zmanim: CachedZmanim) {
+    const now = DateTime.now().setZone('America/Chicago');
+    let mostRecentTime: MostRecentTime | null = null;
+
+    for (const key of relevantZmanimKeys) {
+      const zmanTime = DateTime.fromISO(zmanim[key]).setZone('America/Chicago');
+      if (zmanTime <= now) {
+        mostRecentTime = { label: key, time: zmanTime };
+      }
+    }
+
+    if (mostRecentTime) {
+      fs.writeFileSync(this.recentTimeFile, mostRecentTime.label, 'utf8');
+      this.updateSwitchStates();
+    }
+  }
+
   updateSwitchStates() {
-    const mostRecentTime = fs.existsSync(this.recentTimeFile) ? fs.readFileSync(this.recentTimeFile, 'utf8') : null;
+    const mostRecentTime = this.getRecentTime();
 
     this.accessories.forEach((accessory) => {
       const service = accessory.getService(this.Service.Switch);
       if (service) {
         const isOn = accessory.displayName === mostRecentTime;
         service.updateCharacteristic(this.Characteristic.On, isOn);
+        this.log.info(`Switch ${accessory.displayName} is now ${isOn ? 'ON' : 'OFF'}`);
       }
     });
 
@@ -112,7 +124,7 @@ export class ZmanimSwitches implements DynamicPlatformPlugin {
   }
 
   getSwitchState(key, callback) {
-    const mostRecentTime = fs.existsSync(this.recentTimeFile) ? fs.readFileSync(this.recentTimeFile, 'utf8') : null;
+    const mostRecentTime = this.getRecentTime();
     const isOn = key === mostRecentTime;
     callback(null, isOn);
   }
@@ -132,6 +144,7 @@ export class ZmanimSwitches implements DynamicPlatformPlugin {
       if (accessory) {
         const service = accessory.getService(this.Service.Switch);
         service?.updateCharacteristic(this.Characteristic.On, false);
+        this.log.info(`Switch ${name} turned OFF`);
       }
     };
 
@@ -140,6 +153,7 @@ export class ZmanimSwitches implements DynamicPlatformPlugin {
       if (accessory) {
         const service = accessory.getService(this.Service.Switch);
         service?.updateCharacteristic(this.Characteristic.On, true);
+        this.log.info(`Switch ${name} turned ON`);
       }
     };
 
