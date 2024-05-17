@@ -18,7 +18,7 @@ export class ZmanimAccessory {
   handleOnGet(callback: CharacteristicGetCallback) {
     try {
       const mostRecentTime = this.platform.getRecentTime();
-      const isOn = this.accessory.displayName === mostRecentTime.label;
+      const isOn = this.accessory.displayName === mostRecentTime;
       this.platform.log.debug(`Get request for ${this.accessory.displayName}: ${isOn}`);
       callback(null, isOn);
     } catch (error) {
