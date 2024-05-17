@@ -74,7 +74,7 @@ export class ZmanimSwitches implements DynamicPlatformPlugin {
   }
 
   scheduleStatusRefresh() {
-    new CronJob(`*/${this.configOptions.refreshInterval} * * * * *`, () => {
+    new CronJob(`*/${this.configOptions.refreshInterval} * * * *`, () => {
       this.updateSwitchStates();
     }, null, true, 'America/Chicago');
   }
