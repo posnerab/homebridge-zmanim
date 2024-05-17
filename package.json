@@ -1,16 +1,16 @@
 {
-  "private": true,
-  "displayName": "Plugin Name",
-  "name": "homebridge-plugin-name",
-  "version": "1.0.0",
-  "description": "A short description about what your plugin does.",
+  "private": false,
+  "displayName": "ZmanimSwitches",
+  "name": "homebridge-zmanim",
+  "version": "1.1.0",
+  "description": "A Homebridge plugin to create stateful switches based on Jewish prayer times (zmanim) fetched from the Hebcal API.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/USERNAME/GITHUB_PROJECT_NAME.git"
+    "url": "git+https://github.com/posnerab/homebridge-zmanim.git"
   },
   "bugs": {
-    "url": "https://github.com/USERNAME/GITHUB_PROJECT_NAME/issues"
+    "url": "https://github.com/posnerab/homebridge-zmanim/issues"
   },
   "engines": {
     "node": "^18.17.0 || ^20.9.0",
@@ -31,10 +31,17 @@
     "@typescript-eslint/eslint-plugin": "^7.7.0",
     "@typescript-eslint/parser": "^7.7.0",
     "eslint": "^8.57.0",
-    "homebridge": "^1.8.0",
+    "homebridge": "^1.8.2",
     "nodemon": "^3.1.0",
     "rimraf": "^5.0.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "axios": "^1.6.8",
+    "cron": "^3.1.7",
+    "fs": "^0.0.1-security",
+    "hap-nodejs": "^0.12.1",
+    "luxon": "^3.4.4"
   }
 }

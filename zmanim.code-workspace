@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "../zmanim-js"
+		},
+		{
+			"name": "homebridge-zmanim",
+			"path": "."
+		}
+	],
+	"settings": {}
+}

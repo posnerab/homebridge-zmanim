@@ -1,15 +1,39 @@
 {
-  "pluginAlias": "ExampleHomebridgePlugin",
+  "pluginAlias": "ZmanimSwitches",
   "pluginType": "platform",
   "singular": true,
+  "headerDisplay": "Zmanim Switches",
   "schema": {
     "type": "object",
     "properties": {
-      "name": {
-        "title": "Name",
+      "platform": {
         "type": "string",
-        "required": true,
-        "default": "Example Dynamic Platform"
+        "title": "Platform Name",
+        "default": "ZmanimSwitches"
+      },
+      "geonameid": {
+        "type": "string",
+        "title": "Geoname ID",
+        "required": true
+      },
+      "switchNames": {
+        "type": "object",
+        "title": "Switch Names",
+        "properties": {
+          "chatzotNight": { "type": "string", "title": "Chatzot Night" },
+          "misheyakir": { "type": "string", "title": "Misheyakir" },
+          "dawn": { "type": "string", "title": "Dawn" },
+          "sunrise": { "type": "string", "title": "Sunrise" },
+          "sofZmanShma": { "type": "string", "title": "Sof Zman Shma" },
+          "sofZmanTfilla": { "type": "string", "title": "Sof Zman Tfilla" },
+          "chatzot": { "type": "string", "title": "Chatzot" },
+          "minchaGedola": { "type": "string", "title": "Mincha Gedola" },
+          "minchaKetana": { "type": "string", "title": "Mincha Ketana" },
+          "plagHaMincha": { "type": "string", "title": "Plag HaMincha" },
+          "sunset": { "type": "string", "title": "Sunset" },
+          "beinHaShmashos": { "type": "string", "title": "Bein HaShmashos" },
+          "tzeit85deg": { "type": "string", "title": "Tzeit 85 Deg" }
+        }
       }
     }
   }
