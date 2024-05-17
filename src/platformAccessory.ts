@@ -16,26 +16,42 @@ export class ZmanimAccessory {
   }
 
   handleOnGet(callback: CharacteristicGetCallback) {
+    const done = (error: Error | null, value?: CharacteristicValue) => {
+      try {
+        callback(error, value);
+      } catch (err) {
+        this.platform.log.error(`Error in handleOnGet callback for ${this.accessory.displayName}:`, err);
+      }
+    };
+
     try {
       const mostRecentTime = this.platform.getRecentTime();
       const isOn = this.accessory.displayName === mostRecentTime.label;
       this.platform.log.debug(`Get request for ${this.accessory.displayName}: ${isOn}`);
-      callback(null, isOn);
+      done(null, isOn);
     } catch (error) {
       this.platform.log.error(`Error in handleOnGet for ${this.accessory.displayName}:`, error);
-      callback(error as Error);
+      done(error as Error);
     }
   }
 
   handleOnSet(value: CharacteristicValue, callback: CharacteristicSetCallback) {
+    const done = (error: Error | null) => {
+      try {
+        callback(error);
+      } catch (err) {
+        this.platform.log.error(`Error in handleOnSet callback for ${this.accessory.displayName}:`, err);
+      }
+    };
+
     try {
       const isOn = value as boolean;
       this.platform.log.debug(`Set request for ${this.accessory.displayName}: ${isOn}`);
       this.platform.log.info(`Switch ${this.accessory.displayName} set to ${isOn ? 'ON' : 'OFF'}`);
-      callback(null);
+      done(null);
     } catch (error) {
       this.platform.log.error(`Error in handleOnSet for ${this.accessory.displayName}:`, error);
-      callback(error as Error);
+      done(error as Error);
     }
   }
 }
