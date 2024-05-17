@@ -2,7 +2,7 @@
   "private": false,
   "displayName": "ZmanimSwitches",
   "name": "homebridge-zmanim",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Homebridge plugin to create switches based on Jewish prayer times (Zmanim).",
   "license": "Apache-2.0",
   "repository": {
