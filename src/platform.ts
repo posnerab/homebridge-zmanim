@@ -1,8 +1,8 @@
 import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
-import { CronJob } from 'cron';
-import { DateTime } from 'luxon';
 import * as fs from 'fs';
 import * as path from 'path';
+import { DateTime } from 'luxon';
+import { CronJob } from 'cron';
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { ZmanimAccessory } from './platformAccessory';
 
@@ -30,19 +30,25 @@ export class ZmanimSwitches implements DynamicPlatformPlugin {
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
-    this.recentTimeFile = path.join(this.api.user.persistPath(), 'zmamin-js/recent_time.txt');
+    this.recentTimeFile = path.join(this.api.user.persistPath(), 'recent_time.txt');
     this.switchNames = config.switchNames || {};
     this.configOptions = {
-      refreshInterval: config.refreshInterval || 1,
+      refreshInterval: config.refreshInterval || 5,
       verboseLogging: config.verboseLogging || false,
       logInterval: config.logInterval || 60,
     };
+
+    if (!config.geonameid) {
+      this.log.error('Geoname ID is required for this plugin to function.');
+      return;
+    }
 
     this.api.on('didFinishLaunching', () => {
       log.debug('Executed didFinishLaunching callback');
       this.initializeAccessories();
       this.scheduleStatusRefresh();
       this.scheduleVerboseLogging();
+      this.updateSwitchStates();
     });
   }
 
@@ -84,7 +90,10 @@ export class ZmanimSwitches implements DynamicPlatformPlugin {
       new CronJob(`*/${this.configOptions.logInterval} * * * *`, () => {
         const mostRecentTime = this.getRecentTime();
         const now = DateTime.now().setZone('America/Chicago');
-        this.log.info(`Current time: ${now.toFormat('hh:mm a')}, Most recent zman: ${mostRecentTime}`);
+        this.log.info(
+          `Current time: ${now.toFormat('hh:mm a')}, ` +
+          `Most recent zman: ${mostRecentTime.label} at ${mostRecentTime.time.toFormat('hh:mm a')}`,
+        );
       }, null, true, 'America/Chicago');
     }
   }
@@ -95,31 +104,22 @@ export class ZmanimSwitches implements DynamicPlatformPlugin {
     this.accessories.forEach((accessory) => {
       const service = accessory.getService(this.Service.Switch);
       if (service) {
-        const isOn = accessory.displayName === mostRecentTime;
+        const isOn = accessory.displayName === mostRecentTime.label;
         service.updateCharacteristic(this.Characteristic.On, isOn);
         this.log.info(`Switch ${accessory.displayName} is now ${isOn ? 'ON' : 'OFF'}`);
       }
     });
 
-    this.applyLogicBasedOnMostRecentTime(mostRecentTime);
+    this.applyLogicBasedOnMostRecentTime(mostRecentTime.label);
   }
 
-  getSwitchState(key, callback) {
-    const mostRecentTime = this.getRecentTime();
-    const isOn = key === mostRecentTime;
-    callback(null, isOn);
-  }
-
-  setSwitchState(key, value, callback) {
-    this.updateSwitchStates();
-    callback(null);
-  }
-
-  getRecentTime(): string {
+  getRecentTime(): { label: string; time: DateTime } {
     if (fs.existsSync(this.recentTimeFile)) {
-      return fs.readFileSync(this.recentTimeFile, 'utf8').trim();
+      const recentTime = fs.readFileSync(this.recentTimeFile, 'utf8');
+      const { label, time } = JSON.parse(recentTime);
+      return { label, time: DateTime.fromISO(time) };
     }
-    return '';
+    return { label: '', time: DateTime.now() };
   }
 
   applyLogicBasedOnMostRecentTime(mostRecentTime: string) {
