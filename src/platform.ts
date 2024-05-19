@@ -30,7 +30,7 @@ export class ZmanimSwitches implements DynamicPlatformPlugin {
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
-    this.recentTimeFile = path.join(this.api.user.persistPath(), 'recent_time.txt');
+    this.recentTimeFile = path.join(this.api.user.persistPath(), 'recent_time.json');
     this.switchNames = config.switchNames || {};
     this.configOptions = {
       refreshInterval: config.refreshInterval || 5,
@@ -120,7 +120,7 @@ export class ZmanimSwitches implements DynamicPlatformPlugin {
         const { label, time } = JSON.parse(recentTime);
         return { label, time: DateTime.fromISO(time) };
       } catch (error) {
-        this.log.error('Error parsing recent_time.txt:', error);
+        this.log.error('Error parsing recent_time.json:', error);
       }
     }
     return { label: '', time: DateTime.now() };
