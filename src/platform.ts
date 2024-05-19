@@ -115,9 +115,13 @@ export class ZmanimSwitches implements DynamicPlatformPlugin {
 
   getRecentTime(): { label: string; time: DateTime } {
     if (fs.existsSync(this.recentTimeFile)) {
-      const recentTime = fs.readFileSync(this.recentTimeFile, 'utf8');
-      const { label, time } = JSON.parse(recentTime);
-      return { label, time: DateTime.fromISO(time) };
+      try {
+        const recentTime = fs.readFileSync(this.recentTimeFile, 'utf8');
+        const { label, time } = JSON.parse(recentTime);
+        return { label, time: DateTime.fromISO(time) };
+      } catch (error) {
+        this.log.error('Error parsing recent_time.txt:', error);
+      }
     }
     return { label: '', time: DateTime.now() };
   }
